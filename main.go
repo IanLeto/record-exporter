@@ -7,11 +7,23 @@ import (
 	"net/http"
 )
 
+func NoErr(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Run(address string) {
+
+}
+
 var RootCmd = &cobra.Command{
 	Use:   "tool", // 这个是命令的名字,跟使用没啥关系
 	Short: "",
 	Run: func(cmd *cobra.Command, args []string) {
-
+		address, err := cmd.Flags().GetString("address")
+		NoErr(err)
+		Run(address)
 	},
 }
 
