@@ -1,17 +1,8 @@
-FROM golang:1.16-alpine as builder
+FROM golang:1.17-alpine
 
 WORKDIR /app
 
-COPY . .
-
-RUN go build -o record-exporter .
-
-FROM alpine:latest
-
-WORKDIR /root/
-
-COPY --from=builder /app/record-exporter .
+COPY ./ori $workdir
 
 EXPOSE 9101
-
-CMD ["./record-exporter"]
+CMD ["./ori -c /Users/ian/workdir/cc/goOrigin/config.yaml"]
