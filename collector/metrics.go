@@ -80,8 +80,8 @@ func toExporter(t *TRecord) {
 }
 
 func init() {
-	toExporter(&TRecord{
-		Weight: 70.0,
-	})
-	prometheus.MustRegister(DinnerCount)
+	//toExporter(&TRecord{
+	//	Weight: 70.0,
+	//})
+	//prometheus.MustRegister(DinnerCount)
 }

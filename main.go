@@ -1,10 +1,12 @@
 package main
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
+	"record/collector"
 )
 
 func NoErr(err error) {
@@ -36,7 +38,10 @@ func init() {
 }
 
 func main() {
-
-	http.Handle("/metrics", promhttp.Handler())
+	collectors := collector.NewIanRecordCollector()
+	prometheus.MustRegister(collectors)
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(collectors)
+	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	log.Fatal(http.ListenAndServe(":9101", nil))
 }
