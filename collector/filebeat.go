@@ -138,6 +138,7 @@ type FilebeatCollector struct {
 	outputGaugeVec prometheus.GaugeVec
 	client         http.Client
 	address        string
+	current        float64
 }
 
 func (f *FilebeatCollector) Describe(descs chan<- *prometheus.Desc) {
@@ -167,10 +168,12 @@ func (f *FilebeatCollector) Collect(metrics chan<- prometheus.Metric) {
 	if err != nil {
 		fmt.Println("Unmarshal failed:", err)
 	}
+
 	f.outputGaugeVec.WithLabelValues("events_acked").Set(float64(t.Libbeat.Output.Events.Acked))
 	f.outputGaugeVec.WithLabelValues("events_active").Set(float64(t.Libbeat.Output.Events.Active))
 	f.outputGaugeVec.WithLabelValues("events_batches").Set(float64(t.Libbeat.Output.Events.Batches))
 	f.outputGaugeVec.WithLabelValues("events_total").Set(float64(t.Libbeat.Output.Events.Total))
+
 	f.outputGaugeVec.Collect(metrics)
 }
 
