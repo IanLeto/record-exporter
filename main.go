@@ -25,23 +25,24 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		address, err := cmd.Flags().GetString("address")
 		NoErr(err)
-		Run(address)
+		collectors := collector.NewIanRecordCollector(address)
+		prometheus.MustRegister(collectors)
+		registry := prometheus.NewRegistry()
+		registry.MustRegister(collectors)
+		http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+		log.Fatal(http.ListenAndServe(":9101", nil))
 	},
 }
 
 func init() {
-	RootCmd.Flags().StringP("config", "c", "", "config")
-	RootCmd.Flags().BoolP("pass", "p", false, "pass")
-	RootCmd.Flags().Bool("debug", false, "debug")
-	RootCmd.Flags().String("init", "", "init db 啥的，要现保证各个依赖项，安装部署成功")
+	//RootCmd.Flags().StringP("config", "c", "", "config")
+	RootCmd.Flags().StringP("address", "", "", "goOri ianRecord 访问方式")
+	//RootCmd.Flags().BoolP("pass", "p", false, "pass")
+	//RootCmd.Flags().Bool("debug", false, "debug")
+	//RootCmd.Flags().String("init", "", "init db 啥的，要现保证各个依赖项，安装部署成功")
 
 }
 
 func main() {
-	collectors := collector.NewIanRecordCollector()
-	prometheus.MustRegister(collectors)
-	registry := prometheus.NewRegistry()
-	registry.MustRegister(collectors)
-	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
-	log.Fatal(http.ListenAndServe(":9101", nil))
+	NoErr(RootCmd.Execute())
 }
