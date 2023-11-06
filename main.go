@@ -33,6 +33,8 @@ var RootCmd = &cobra.Command{
 			collector = collectors.NewIanRecordCollector(address)
 		case "filebeat":
 			collector = collectors.NewFilebeatExporter(address)
+		default:
+			collector = collectors.NewIanRecordCollector(address)
 		}
 		prometheus.MustRegister(collector)
 		registry := prometheus.NewRegistry()
