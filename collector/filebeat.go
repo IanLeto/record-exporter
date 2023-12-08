@@ -179,6 +179,7 @@ func (f *FilebeatCollector) Collect(metrics chan<- prometheus.Metric) {
 
 func NewFilebeatExporter(address string) *FilebeatCollector {
 	return &FilebeatCollector{
+		address: address,
 		beatGaugeVec: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "filebeat",
 			Help: "filebeat metrics",

@@ -15,10 +15,6 @@ func NoErr(err error) {
 	}
 }
 
-func Run(address string) {
-
-}
-
 var RootCmd = &cobra.Command{
 	Use:   "tool", // 这个是命令的名字,跟使用没啥关系
 	Short: "",
