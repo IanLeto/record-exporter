@@ -136,11 +136,13 @@ type FilebeatResponse struct {
 type FilebeatCollector struct {
 	beatGaugeVec   prometheus.GaugeVec
 	outputGaugeVec prometheus.GaugeVec
+	up             *prometheus.Desc
 	client         http.Client
 	address        string
 	current        float64
 }
 
+// Describe 描述所有我们想要收集的指标，尤其指标名，标签以及帮助信息
 func (f *FilebeatCollector) Describe(descs chan<- *prometheus.Desc) {
 	f.outputGaugeVec.Describe(descs)
 	f.beatGaugeVec.Describe(descs)
@@ -154,12 +156,14 @@ func (f *FilebeatCollector) Collect(metrics chan<- prometheus.Metric) {
 	request, err := http.NewRequest("GET", f.address, nil)
 	if err != nil {
 		fmt.Println("Request failed:", err)
+		metrics <- prometheus.MustNewConstMetric(f.up, prometheus.GaugeValue, 0) // 需要将up指标设置为0
 		return
 	}
 	resp, err := f.client.Do(request)
 	if resp == nil {
 		fmt.Println("Request failed:", err)
-		f.outputGaugeVec.Collect(metrics)
+		metrics <- prometheus.MustNewConstMetric(f.up, prometheus.GaugeValue, 0)
+		//f.outputGaugeVec.Collect(metrics)
 		return
 	}
 	res, err := httputil.DumpResponse(resp, true)
@@ -185,7 +189,8 @@ func NewFilebeatExporter(address string) *FilebeatCollector {
 		}, []string{"beat"}),
 		outputGaugeVec: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "filebeat_output",
-			Help: "filebeat output metrics",
+			Help: "filebeat 输出的相关信息",
 		}, []string{"output"}),
+		up: prometheus.NewDesc("filebeat_up", "filebeat up", nil, nil),
 	}
 }

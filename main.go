@@ -1,12 +1,13 @@
 package main
 
 import (
+	collector2 "exporter/collector"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
-	collectors "record/collector"
+	//collectors "record/collector"
 )
 
 func NoErr(err error) {
@@ -30,9 +31,9 @@ var RootCmd = &cobra.Command{
 		NoErr(err)
 		switch kind {
 		case "ianRecord":
-			collector = collectors.NewIanRecordCollector(address)
+			collector = collector2.NewIanRecordCollector(address)
 		case "filebeat":
-			collector = collectors.NewFilebeatExporter(address)
+			collector = collector2.NewFilebeatExporter(address)
 		}
 		prometheus.MustRegister(collector)
 		registry := prometheus.NewRegistry()
