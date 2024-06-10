@@ -12,6 +12,12 @@ type IanRecordCollector struct {
 	mealGaugeVec prometheus.GaugeVec
 	client       http.Client
 	address      string
+	interval     int
+}
+
+func (i *IanRecordCollector) GetData() error {
+
+	return nil
 }
 
 func (i *IanRecordCollector) Describe(descs chan<- *prometheus.Desc) {
