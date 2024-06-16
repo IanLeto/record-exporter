@@ -20,10 +20,12 @@ func (i *IanRecordCollector) GetData() error {
 	return nil
 }
 
+// 向prometheus注册指标
 func (i *IanRecordCollector) Describe(descs chan<- *prometheus.Desc) {
 	i.mealGaugeVec.Describe(descs)
 }
 
+// 收集指标
 func (i *IanRecordCollector) Collect(metrics chan<- prometheus.Metric) {
 	var (
 		err error
@@ -81,3 +83,31 @@ func NewIanRecordCollector(address string) *IanRecordCollector {
 		address: address,
 	}
 }
+
+type TRecordToMetrics struct {
+}
+
+var Weight = prometheus.NewGauge(prometheus.GaugeOpts{
+	Name: "weight",
+	Help: "Ian's weight records, divided into morning, afternoon, and evening measurements",
+	ConstLabels: prometheus.Labels{
+		"morning":   "BF",
+		"afternoon": "LUN",
+		"evening":   "DIN",
+	},
+})
+
+var Cost = prometheus.NewGauge(prometheus.GaugeOpts{
+	Name: "cost",
+	Help: "Ian's cost records, divided into morning, afternoon, and evening measurements",
+	ConstLabels: prometheus.Labels{
+		"morning":   "BF",
+		"afternoon": "LUN",
+		"evening":   "DIN",
+	},
+})
+
+var SumMoney = prometheus.NewCounterVec(prometheus.CounterOpts{
+	Name: "sum_money",
+	Help: "Ian's sum money records",
+}, []string{"time"})

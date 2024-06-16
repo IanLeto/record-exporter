@@ -4,7 +4,6 @@ import (
 	collector2 "exporter/collector"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
@@ -26,9 +25,9 @@ var RootCmd = &cobra.Command{
 	Short: "",
 	Run: func(cmd *cobra.Command, args []string) {
 		var (
-			collector  prometheus.Collector
-			err        error
-			dataSource collector2.DataSource
+			collector prometheus.Collector
+			err       error
+			//dataSource collector2.DataSource
 		)
 
 		address, err := cmd.Flags().GetString("address")
@@ -36,11 +35,12 @@ var RootCmd = &cobra.Command{
 		kind, err := cmd.Flags().GetString("kind")
 		NoErr(err)
 
-		c := cron.New()
-		_, err = c.AddFunc("*/60 * * * * *", func() {
-			err = dataSource.GetData()
-			NoErr(err)
-		})
+		//c := cron.New()
+
+		//_, err = c.AddFunc("*/65 * * * *", func() {
+		//	err = dataSource.GetData()
+		//	NoErr(err)
+		//})
 		NoErr(err)
 		switch kind {
 		case "ianRecord":
@@ -48,7 +48,7 @@ var RootCmd = &cobra.Command{
 		case "filebeat":
 			collector = collector2.NewFilebeatExporter(address)
 		}
-		prometheus.MustRegister(collector)
+		//prometheus.MustRegister(collector)
 		registry := prometheus.NewRegistry()
 		registry.MustRegister(collector)
 		http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
