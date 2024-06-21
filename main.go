@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
-	collectors "record/collector"
+	collector2 "record/collector"
 )
 
 func NoErr(err error) {
@@ -19,18 +19,27 @@ var RootCmd = &cobra.Command{
 	Use:   "tool", // 这个是命令的名字,跟使用没啥关系
 	Short: "",
 	Run: func(cmd *cobra.Command, args []string) {
-		var collector prometheus.Collector
+		var (
+			collector prometheus.Collector
+			err       error
+			//dataSource collector2.DataSource
+		)
+
 		address, err := cmd.Flags().GetString("address")
 		NoErr(err)
 		kind, err := cmd.Flags().GetString("kind")
 		NoErr(err)
+		//c := cron.New()
+		//_, err = c.AddFunc("*/65 * * * *", func() {
+		//	err = dataSource.GetData()
+		//	NoErr(err)
+		//})
+		NoErr(err)
 		switch kind {
 		case "ianRecord":
-			collector = collectors.NewIanRecordCollector(address)
+			collector = collector2.NewIanRecordCollector(address)
 		case "filebeat":
-			collector = collectors.NewFilebeatExporter(address)
-		default:
-			collector = collectors.SampleCounter
+			collector = collector2.NewFilebeatExporter(address)
 		}
 		//prometheus.MustRegister(collector)
 		registry := prometheus.NewRegistry()
@@ -43,9 +52,6 @@ var RootCmd = &cobra.Command{
 func init() {
 	RootCmd.Flags().StringP("kind", "c", "", "config")
 	RootCmd.Flags().StringP("address", "", "", "goOri ianRecord 访问方式")
-	//RootCmd.Flags().BoolP("pass", "p", false, "pass")
-	//RootCmd.Flags().Bool("debug", false, "debug")
-	//RootCmd.Flags().String("init", "", "init db 啥的，要现保证各个依赖项，安装部署成功")
 
 }
 
