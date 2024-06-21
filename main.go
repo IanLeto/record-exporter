@@ -30,9 +30,9 @@ var RootCmd = &cobra.Command{
 		case "filebeat":
 			collector = collectors.NewFilebeatExporter(address)
 		default:
-			collector = collectors.NewIanRecordCollector(address)
+			collector = collectors.SampleCounter
 		}
-		prometheus.MustRegister(collector)
+		//prometheus.MustRegister(collector)
 		registry := prometheus.NewRegistry()
 		registry.MustRegister(collector)
 		http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
