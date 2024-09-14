@@ -60,7 +60,8 @@ func (i *IanRecordCollector) Collect(metrics chan<- prometheus.Metric) {
 
 }
 
-// Describe 向prometheus注册指标
+// Describe 向prometheus注册指标，他描述了我们想要收集的指标的名字，标签和帮助信息；
+// 当collector 被注册到registry中时，会调用这个方法
 func (i *IanRecordCollector) Describe(descs chan<- *prometheus.Desc) {
 	i.mealGaugeVec.Describe(descs)
 }
