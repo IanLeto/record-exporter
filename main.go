@@ -22,29 +22,27 @@ var RootCmd = &cobra.Command{
 		var (
 			collector prometheus.Collector
 			err       error
-			//dataSource collector2.DataSource
+			opts      = promhttp.HandlerOpts{
+				EnableOpenMetrics: false,
+			}
+			registry = prometheus.NewRegistry()
 		)
 
 		address, err := cmd.Flags().GetString("address")
 		NoErr(err)
 		kind, err := cmd.Flags().GetString("kind")
 		NoErr(err)
-		//c := cron.New()
-		//_, err = c.AddFunc("*/65 * * * *", func() {
-		//	err = dataSource.GetData()
-		//	NoErr(err)
-		//})
-		NoErr(err)
 		switch kind {
 		case "ianRecord":
 			collector = collector2.NewIanRecordCollector(address)
 		case "filebeat":
 			collector = collector2.NewFilebeatExporter(address)
+		default:
+			collector = collector2.NewIanRecordCollector(address)
 		}
-		//prometheus.MustRegister(collector)
-		registry := prometheus.NewRegistry()
+
 		registry.MustRegister(collector)
-		http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+		http.Handle("/metrics", promhttp.HandlerFor(registry, opts))
 		log.Fatal(http.ListenAndServe(":9101", nil))
 	},
 }

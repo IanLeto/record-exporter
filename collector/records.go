@@ -21,11 +21,6 @@ func (i *IanRecordCollector) GetData() error {
 	return nil
 }
 
-// Describe 向prometheus注册指标
-func (i *IanRecordCollector) Describe(descs chan<- *prometheus.Desc) {
-	i.mealGaugeVec.Describe(descs)
-}
-
 // Collect 收集指标
 func (i *IanRecordCollector) Collect(metrics chan<- prometheus.Metric) {
 	var (
@@ -63,6 +58,11 @@ func (i *IanRecordCollector) Collect(metrics chan<- prometheus.Metric) {
 		i.costCountVec.WithLabelValues().Add(float64(t.Cost))
 	}
 
+}
+
+// Describe 向prometheus注册指标
+func (i *IanRecordCollector) Describe(descs chan<- *prometheus.Desc) {
+	i.mealGaugeVec.Describe(descs)
 }
 
 func NewIanRecordCollector(address string) *IanRecordCollector {
