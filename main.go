@@ -28,7 +28,7 @@ var RootCmd = &cobra.Command{
 				EnableOpenMetrics: false,
 			}
 			// 注册器，用来管理collectors 和 指标本身
-			// 当请求打过来，例如http，或遍历collectors，然后调用collect方法，将数据写入到metrics中
+			// 当请求打过来，例如http，会遍历collectors，然后调用collect方法，将数据写入到metrics中
 			registry = prometheus.NewRegistry()
 		)
 
