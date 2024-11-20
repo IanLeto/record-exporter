@@ -31,25 +31,13 @@ type IanMetrics struct {
 var DinnerCount = prometheus.NewCounter(prometheus.CounterOpts{})
 
 type TRecord struct {
-	Name       string  `json:"name"`
-	Weight     float32 `json:"weight"`
-	BF         string  `json:"bf"`
-	LUN        string  `json:"lun"`
-	DIN        string  `json:"din"`
-	EXTRA      string  `json:"extra"`
-	Core       int     `json:"core"`
-	Runner     int     `json:"runner"`
-	Support    int     `json:"support"`
-	Squat      int     `json:"squat"`
-	EasyBurpee int     `json:"easy_burpee"`
-	Chair      int     `json:"chair"`
-	Stretch    int     `json:"stretch"`
-	Vol1       string  `json:"vol1"`
-	Vol2       string  `json:"vol2"`
-	Vol3       string  `json:"vol3"`
-	Vol4       string  `json:"vol4"`
-	Content    string  `json:"content"`
-	Region     string  `json:"region"`
+	Name       string  `json:"name" bson:"name"`
+	Weight     float64 `json:"weight" bson:"weight"`
+	IsFuck     bool    `json:"is_fuck"`
+	Cost       int     `json:"cost" bson:"cost"`
+	Content    string  `json:"content" bson:"content"`
+	CreateTime int     `json:"create_time"`
+	UpdateTime int     `json:"update_time"`
 }
 
 func NewWatch() {
@@ -79,13 +67,9 @@ func NewWatch() {
 
 func toExporter(t *TRecord) {
 	weightGauge := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "weight",
-		Help: "Ian's weight records, divided into morning, afternoon, and evening measurements",
-		ConstLabels: prometheus.Labels{
-			"morning":   t.BF,
-			"afternoon": t.LUN,
-			"evening":   t.DIN,
-		},
+		Name:        "weight",
+		Help:        "Ian's weight records, divided into morning, afternoon, and evening measurements",
+		ConstLabels: prometheus.Labels{},
 	})
 	weightVecGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{}, []string{})
 	weightGauge.Set(float64(t.Weight))

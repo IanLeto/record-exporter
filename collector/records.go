@@ -9,29 +9,25 @@ import (
 )
 
 type IanRecordCollector struct {
-	mealGaugeVec prometheus.GaugeVec
-	client       http.Client
-	address      string
-	interval     int
+	mealGaugeVec   prometheus.GaugeVec
+	costCountVec   prometheus.CounterVec
+	weightGaugeVec prometheus.GaugeVec
+	client         http.Client
+	address        string
+	interval       int
 }
 
 func (i *IanRecordCollector) GetData() error {
-
 	return nil
 }
 
-// 向prometheus注册指标
-func (i *IanRecordCollector) Describe(descs chan<- *prometheus.Desc) {
-	i.mealGaugeVec.Describe(descs)
-}
-
-// 收集指标
+// Collect 收集指标
 func (i *IanRecordCollector) Collect(metrics chan<- prometheus.Metric) {
 	var (
 		err error
 		t   = &TRecord{}
 	)
-	i.mealGaugeVec.WithLabelValues("BF").Set(0)
+	defer func() { i.mealGaugeVec.Collect(metrics) }()
 	request, err := http.NewRequest("GET", i.address, nil)
 	if err != nil {
 		fmt.Println("Request failed:", err)
@@ -53,32 +49,36 @@ func (i *IanRecordCollector) Collect(metrics chan<- prometheus.Metric) {
 	err = json.Unmarshal(res, t)
 	if err != nil {
 		fmt.Println("Unmarshal failed:", err)
+		return
 	}
-	if t.BF != "" {
-		i.mealGaugeVec.WithLabelValues("BF").Set(1)
-	} else {
-		i.mealGaugeVec.WithLabelValues("BF").Set(0)
+	if t.Weight > 0 {
+		i.weightGaugeVec.WithLabelValues(TimePeriod(int64(t.UpdateTime))).Set(t.Weight)
 	}
-	if t.LUN != "" {
-		i.mealGaugeVec.WithLabelValues("LUN").Set(1)
-	} else {
-		i.mealGaugeVec.WithLabelValues("LUN").Set(0)
+	if t.Cost > 0 {
+		i.costCountVec.WithLabelValues().Add(float64(t.Cost))
 	}
-	if t.DIN != "" {
-		i.mealGaugeVec.WithLabelValues("DIN").Set(1)
-	} else {
-		i.mealGaugeVec.WithLabelValues("DIN").Set(0)
-	}
-	i.mealGaugeVec.Collect(metrics)
 
+}
+
+// Describe 向prometheus注册指标，他描述了我们想要收集的指标的名字，标签和帮助信息；
+// 当collector 被注册到registry中时，会调用这个方法
+func (i *IanRecordCollector) Describe(descs chan<- *prometheus.Desc) {
+	i.mealGaugeVec.Describe(descs)
 }
 
 func NewIanRecordCollector(address string) *IanRecordCollector {
 	return &IanRecordCollector{
 		mealGaugeVec: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "ian_test_meal",
-			Help: "help ian control the energy input",
-		}, []string{"time"}),
+			Name:        "ian_test_meal",
+			Help:        "help ian control the energy input",
+			ConstLabels: prometheus.Labels{},
+		}, []string{"type", "cost"}),
+		costCountVec: SumMoney,
+		weightGaugeVec: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "weight",
+			Help: "Ian's weight records, divided into morning, afternoon, and evening measurements",
+		}, []string{"Late Night", "Dawn", "Morning", "Noon", "Afternoon", "Evening", "Late Night"}),
+
 		client:  http.Client{},
 		address: address,
 	}
@@ -87,27 +87,12 @@ func NewIanRecordCollector(address string) *IanRecordCollector {
 type TRecordToMetrics struct {
 }
 
-var Weight = prometheus.NewGauge(prometheus.GaugeOpts{
+var Weight = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 	Name: "weight",
 	Help: "Ian's weight records, divided into morning, afternoon, and evening measurements",
-	ConstLabels: prometheus.Labels{
-		"morning":   "BF",
-		"afternoon": "LUN",
-		"evening":   "DIN",
-	},
-})
+}, []string{"time"})
 
-var Cost = prometheus.NewGauge(prometheus.GaugeOpts{
-	Name: "cost",
-	Help: "Ian's cost records, divided into morning, afternoon, and evening measurements",
-	ConstLabels: prometheus.Labels{
-		"morning":   "BF",
-		"afternoon": "LUN",
-		"evening":   "DIN",
-	},
-})
-
-var SumMoney = prometheus.NewCounterVec(prometheus.CounterOpts{
+var SumMoney = *prometheus.NewCounterVec(prometheus.CounterOpts{
 	Name: "sum_money",
 	Help: "Ian's sum money records",
 }, []string{"time"})

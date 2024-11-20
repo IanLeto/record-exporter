@@ -1,13 +1,12 @@
 package main
 
 import (
-	collector2 "exporter/collector"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
-	//collectors "record/collector"
+	collector2 "record/collector"
 )
 
 func NoErr(err error) {
@@ -16,42 +15,41 @@ func NoErr(err error) {
 	}
 }
 
-func Run(address string) {
-
-}
-
 var RootCmd = &cobra.Command{
 	Use:   "tool", // 这个是命令的名字,跟使用没啥关系
 	Short: "",
 	Run: func(cmd *cobra.Command, args []string) {
 		var (
-			collector prometheus.Collector
-			err       error
-			//dataSource collector2.DataSource
+			// 一组collectors，用来将获取需要的数据
+			collectors []prometheus.Collector
+			err        error
+			// 意味着，我们对server 暴露出来的是http协议
+			opts = promhttp.HandlerOpts{
+				EnableOpenMetrics: false,
+			}
+			// 注册器，用来管理collectors 和 指标本身
+			// 当请求打过来，例如http，会遍历collectors，然后调用collect方法，将数据写入到metrics中
+			registry = prometheus.NewRegistry()
 		)
 
 		address, err := cmd.Flags().GetString("address")
 		NoErr(err)
 		kind, err := cmd.Flags().GetString("kind")
 		NoErr(err)
-
-		//c := cron.New()
-
-		//_, err = c.AddFunc("*/65 * * * *", func() {
-		//	err = dataSource.GetData()
-		//	NoErr(err)
-		//})
-		NoErr(err)
 		switch kind {
 		case "ianRecord":
-			collector = collector2.NewIanRecordCollector(address)
+			collectors = append(collectors, collector2.NewIanRecordCollector(address))
 		case "filebeat":
-			collector = collector2.NewFilebeatExporter(address)
+			//collector = collector2.NewFilebeatExporter(address)
+		default:
+			collectors = append(collectors, collector2.NewIanRecordCollector(address))
 		}
-		//prometheus.MustRegister(collector)
-		registry := prometheus.NewRegistry()
-		registry.MustRegister(collector)
-		http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+		//registry.MustRegister(collectors...)
+		registry.MustRegister(collector2.TransCountVec, collector2.SuccessCountVec, collector2.RespCountVec)
+		// 注册一个handler，用来处理metrics请求
+		// http 过来时候，会调用gather， reg 本身实现了gather，gather 会遍历所有的collectors 然后调用collect方法
+		http.Handle("/metrics", promhttp.HandlerFor(registry, opts))
+		collector2.NewDemoData()
 		log.Fatal(http.ListenAndServe(":9101", nil))
 	},
 }
