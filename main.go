@@ -44,10 +44,12 @@ var RootCmd = &cobra.Command{
 		default:
 			collectors = append(collectors, collector2.NewIanRecordCollector(address))
 		}
-		registry.MustRegister(collectors...)
+		//registry.MustRegister(collectors...)
+		registry.MustRegister(collector2.TransCountVec, collector2.SuccessCountVec, collector2.RespCountVec)
 		// 注册一个handler，用来处理metrics请求
 		// http 过来时候，会调用gather， reg 本身实现了gather，gather 会遍历所有的collectors 然后调用collect方法
 		http.Handle("/metrics", promhttp.HandlerFor(registry, opts))
+		collector2.NewDemoData()
 		log.Fatal(http.ListenAndServe(":9101", nil))
 	},
 }
