@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"io"
 	"net/http"
-	"net/http/httputil"
+	"time"
 )
 
 type IanRecordCollector struct {
@@ -17,47 +18,100 @@ type IanRecordCollector struct {
 	interval       int
 }
 
+type TRecord struct {
+	ID         int     `json:"id"`
+	Title      string  `json:"title"`
+	Weight     float64 `json:"weight"`
+	NigWeight  float64 `json:"nig_weight"`
+	Cost       int     `json:"cost"`
+	UpdateTime int64   `json:"create_time"` // 注意：JSON 字段是 create_time
+}
+
+type RecordResponse struct {
+	Data struct {
+		Items []TRecord `json:"items"`
+	} `json:"Data"`
+	Message   string `json:"Message"`
+	TransType int    `json:"TransType"`
+}
+
 func (i *IanRecordCollector) GetData() error {
 	return nil
 }
 
+func getTodayStartEnd() (int64, int64) {
+	now := time.Now()
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	end := start.Add(24 * time.Hour)
+	return start.Unix(), end.Unix()
+}
+
 // Collect 收集指标
 func (i *IanRecordCollector) Collect(metrics chan<- prometheus.Metric) {
-	var (
-		err error
-		t   = &TRecord{}
-	)
-	defer func() { i.mealGaugeVec.Collect(metrics) }()
-	request, err := http.NewRequest("GET", i.address, nil)
-	if err != nil {
-		fmt.Println("Request failed:", err)
+	var resData = &RecordResponse{}
+
+	defer func() {
 		i.mealGaugeVec.Collect(metrics)
+		i.weightGaugeVec.Collect(metrics)
+		i.costCountVec.Collect(metrics)
+	}()
+
+	start, end := getTodayStartEnd()
+	url := fmt.Sprintf("%s/v1/record?region=win&start_time=%d&end_time=%d", i.address, start, end)
+
+	fmt.Println("📡 Sending request:")
+	fmt.Println("  ➜ URL:", url)
+
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("❌ Failed to create request:", err)
 		return
 	}
+	request.Header.Set("Content-Type", "application/json")
 
 	resp, err := i.client.Do(request)
-	if resp == nil {
-		fmt.Println("Request failed:", err)
-		i.mealGaugeVec.Collect(metrics)
-		return
-	}
-	if resp.StatusCode != 200 {
-		fmt.Println("Request failed:", err)
-	}
-	res, err := httputil.DumpResponse(resp, true)
-	fmt.Printf("%s\n", res)
-	err = json.Unmarshal(res, t)
 	if err != nil {
-		fmt.Println("Unmarshal failed:", err)
+		fmt.Println("❌ HTTP request failed:", err)
 		return
 	}
-	if t.Weight > 0 {
-		i.weightGaugeVec.WithLabelValues(TimePeriod(int64(t.UpdateTime))).Set(t.Weight)
-	}
-	if t.Cost > 0 {
-		i.costCountVec.WithLabelValues().Add(float64(t.Cost))
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("❌ Unexpected status code: %d\n", resp.StatusCode)
+		return
 	}
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("❌ Failed to read response body:", err)
+		return
+	}
+
+	fmt.Println("📥 Raw response body:")
+	fmt.Println(string(body))
+
+	err = json.Unmarshal(body, resData)
+	if err != nil {
+		fmt.Println("❌ Failed to unmarshal JSON:", err)
+		return
+	}
+
+	if len(resData.Data.Items) == 0 {
+		fmt.Println("⚠️ No items found in response.")
+		return
+	}
+
+	// 只取第一个 item
+	t := resData.Data.Items[0]
+	fmt.Printf("✅ Parsed First Record: %+v\n", t)
+
+	if t.Weight > 0 {
+		//period := TimePeriod(t.UpdateTime)
+		i.weightGaugeVec.WithLabelValues(t.Title).Set(t.Weight)
+	}
+	if t.Cost > 0 {
+		i.costCountVec.WithLabelValues(t.Title).Add(float64(t.Cost))
+	}
 }
 
 // Describe 向prometheus注册指标，他描述了我们想要收集的指标的名字，标签和帮助信息；

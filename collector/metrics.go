@@ -30,16 +30,6 @@ type IanMetrics struct {
 
 var DinnerCount = prometheus.NewCounter(prometheus.CounterOpts{})
 
-type TRecord struct {
-	Name       string  `json:"name" bson:"name"`
-	Weight     float64 `json:"weight" bson:"weight"`
-	IsFuck     bool    `json:"is_fuck"`
-	Cost       int     `json:"cost" bson:"cost"`
-	Content    string  `json:"content" bson:"content"`
-	CreateTime int     `json:"create_time"`
-	UpdateTime int     `json:"update_time"`
-}
-
 func NewWatch() {
 	var (
 		client = http.Client{}
