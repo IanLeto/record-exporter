@@ -21,7 +21,7 @@ type IanRecordCollector struct {
 type TRecord struct {
 	ID         int     `json:"id"`
 	Title      string  `json:"title"`
-	Weight     float64 `json:"weight"`
+	NorWeight  float64 `json:"mor_weight"`
 	NigWeight  float64 `json:"nig_weight"`
 	Cost       int     `json:"cost"`
 	UpdateTime int64   `json:"create_time"` // 注意：JSON 字段是 create_time
@@ -105,19 +105,19 @@ func (i *IanRecordCollector) Collect(metrics chan<- prometheus.Metric) {
 	t := resData.Data.Items[0]
 	fmt.Printf("✅ Parsed First Record: %+v\n", t)
 
-	if t.Weight > 0 {
-		//period := TimePeriod(t.UpdateTime)
-		i.weightGaugeVec.WithLabelValues(t.Title).Set(t.Weight)
-	}
-	if t.Cost > 0 {
-		i.costCountVec.WithLabelValues(t.Title).Add(float64(t.Cost))
-	}
+	//period := TimePeriod(t.UpdateTime)
+	i.weightGaugeVec.WithLabelValues("nor").Set(t.NorWeight)
+	i.weightGaugeVec.WithLabelValues("nig").Set(t.NigWeight)
+	i.costCountVec.WithLabelValues("nor").Add(float64(t.Cost))
+	i.costCountVec.WithLabelValues("nig").Add(float64(t.Cost))
 }
 
 // Describe 向prometheus注册指标，他描述了我们想要收集的指标的名字，标签和帮助信息；
 // 当collector 被注册到registry中时，会调用这个方法
 func (i *IanRecordCollector) Describe(descs chan<- *prometheus.Desc) {
 	i.mealGaugeVec.Describe(descs)
+	i.costCountVec.Describe(descs)
+	i.weightGaugeVec.Describe(descs)
 }
 
 func NewIanRecordCollector(address string) *IanRecordCollector {
@@ -126,12 +126,17 @@ func NewIanRecordCollector(address string) *IanRecordCollector {
 			Name:        "ian_test_meal",
 			Help:        "help ian control the energy input",
 			ConstLabels: prometheus.Labels{},
-		}, []string{"type", "cost"}),
-		costCountVec: SumMoney,
+		}, []string{"time_period"}), // 定义一个时间段标签
+
+		costCountVec: *prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "sum_money",
+			Help: "Ian's sum money records",
+		}, []string{"time_period"}), // 定义一个时间段标签
+
 		weightGaugeVec: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "weight",
-			Help: "Ian's weight records, divided into morning, afternoon, and evening measurements",
-		}, []string{"Late Night", "Dawn", "Morning", "Noon", "Afternoon", "Evening", "Late Night"}),
+			Help: "Ian's weight records",
+		}, []string{"time_period"}), // 定义一个时间段标签
 
 		client:  http.Client{},
 		address: address,
