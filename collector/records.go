@@ -145,13 +145,3 @@ func NewIanRecordCollector(address string) *IanRecordCollector {
 
 type TRecordToMetrics struct {
 }
-
-var Weight = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-	Name: "weight",
-	Help: "Ian's weight records, divided into morning, afternoon, and evening measurements",
-}, []string{"time"})
-
-var SumMoney = *prometheus.NewCounterVec(prometheus.CounterOpts{
-	Name: "sum_money",
-	Help: "Ian's sum money records",
-}, []string{"time"})
